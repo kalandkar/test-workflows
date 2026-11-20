@@ -1,0 +1,51 @@
+name: Approval Check Issue
+
+on:
+  issues:
+    types: [opened, reopened]
+
+permissions:
+  issues: write
+
+jobs:
+  check-issue:
+    name: Restrict Direct Issue Creation to Owner
+    if: github.event.issue.user.login != github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/issue-restricted-message.md
+
+      - name: Comment, Close & Lock Unapproved Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const issue = context.payload.issue;
+            const msgPath = ".github/issue-restricted-message.md";
+            const body = fs.existsSync(msgPath)
+              ? fs.readFileSync(msgPath, "utf8").trim()
+              : `👋 Direct issue creation is restricted to project maintainers. Please open a **[GitHub Discussion](https://github.com/${context.repo.owner}/${context.repo.repo}/discussions)** first.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body
+            });
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              state: "closed",
+              state_reason: "not_planned"
+            });
+
+            await github.rest.issues.lock({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              lock_reason: "off-topic"
+            });

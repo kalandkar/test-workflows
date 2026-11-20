@@ -1,0 +1,19 @@
+title: "[Idea]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose new ideas, specialist agent enhancements, or workflow improvements here. **Write in your own human voice**—do not paste raw LLM-generated design docs.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What concrete problem or engineering workflow gap does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution & Architectural Fit
+      description: How does this fit ERBoard's zero-framework, deterministic-guardrail design?
+    validations:
+      required: true

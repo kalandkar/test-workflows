@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🟦 Report a Bug (Issue Triage Discussion)
+    url: https://github.com/kalandkar/erboard/discussions/new?category=issue-triage
+    about: Users cannot create Issues directly. Start an Issue Triage discussion first; confirmed bugs are converted to Issues by the maintainer.
+  - name: 💡 Propose a Feature or Idea
+    url: https://github.com/kalandkar/erboard/discussions/new?category=feature-requests-ideas
+    about: Discuss architectural ideas, new specialist agents, or LLM providers in Discussions.
+  - name: 🔬 Submit an ERBoard Self-Audit or Benchmark
+    url: https://github.com/kalandkar/erboard/discussions/new?category=self-audits-benchmarks
+    about: Share verified P0/P1 self-reviews or false-positive calibration findings from running ERBoard on itself.
+  - name: 🤝 Request Contributor Approval
+    url: https://github.com/kalandkar/erboard/discussions/new?category=approval-request
+    about: First-time contributors must request approval in Discussions before opening Pull Requests.
+  - name: 📖 Read AI Usage & Contribution Policy
+    url: https://github.com/kalandkar/erboard/blob/main/AI_POLICY.md
+    about: Review our human-in-the-loop and anti-AI-slop rules before participating.

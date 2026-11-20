@@ -1,0 +1,96 @@
+name: Approval Manage by Discussion
+
+on:
+  discussion_comment:
+    types: [created]
+
+concurrency:
+  group: approval-manage
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  discussions: write
+
+jobs:
+  manage-approval:
+    name: Process !approve / !block Commands
+    if: |
+      github.event.comment.user.login == github.repository_owner &&
+      (contains(github.event.comment.body, '!approve') || contains(github.event.comment.body, '!block'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update and Sort .github/CONTRIBUTORS.td
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const owner = context.repo.owner.toLowerCase();
+            const body = context.payload.comment.body.trim();
+            const targetUser = context.payload.discussion.user.login.toLowerCase();
+
+            // Guard: Repository owner is exempt and can never be added or blocked in CONTRIBUTORS.td
+            if (targetUser === owner) {
+              core.notice(`Skipping CONTRIBUTORS.td update: '${targetUser}' is the repository owner and has unrestricted rights.`);
+              return;
+            }
+
+            const file = ".github/CONTRIBUTORS.td";
+            const normalizeKey = (line) => {
+              const token = line.trim().split(/\s+/)[0].toLowerCase();
+              const unsigned = token.replace(/^-/, "");
+              return unsigned.includes(":") ? unsigned.split(":", 2)[1] : unsigned;
+            };
+
+            const isGithubEntry = (line) => {
+              const token = line.trim().split(/\s+/)[0].toLowerCase().replace(/^-/, "");
+              return !token.includes(":") || token.startsWith("github:");
+            };
+
+            const rawLines = fs.existsSync(file) ? fs.readFileSync(file, "utf8").split("\n") : [];
+            const header = [];
+            const entries = [];
+            let inEntries = false;
+
+            for (const line of rawLines) {
+              const trimmed = line.trim();
+              if (!inEntries && (trimmed === "" || trimmed.startsWith("#"))) {
+                header.push(line);
+                continue;
+              }
+              if (trimmed && !trimmed.startsWith("#")) {
+                inEntries = true;
+                entries.push(trimmed);
+              }
+            }
+
+            // Remove any existing entry for targetUser (and ensure owner handle is never present)
+            const filtered = entries.filter((line) => {
+              if (!isGithubEntry(line)) return true;
+              const key = normalizeKey(line);
+              return key !== targetUser && key !== owner;
+            });
+
+            if (body.includes("!block")) {
+              filtered.push(`-${targetUser} # blocked via discussion #${context.payload.discussion.number}`);
+            } else if (body.includes("!approve")) {
+              filtered.push(`${targetUser}`);
+            }
+
+            filtered.sort((a, b) => normalizeKey(a).localeCompare(normalizeKey(b)));
+
+            const headerText = header.join("\n").replace(/\n+$/, "");
+            const output = headerText
+              ? `${headerText}\n\n${filtered.join("\n")}\n`
+              : `${filtered.join("\n")}\n`;
+
+            fs.writeFileSync(file, output);
+
+      - name: Commit & Push CONTRIBUTORS.td
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/CONTRIBUTORS.td
+          git diff --cached --quiet || (git commit -m "chore(approval): update CONTRIBUTORS.td from discussion #${{ github.event.discussion.number }}" && git push)

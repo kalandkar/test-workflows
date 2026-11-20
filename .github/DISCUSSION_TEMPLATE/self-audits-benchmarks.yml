@@ -1,0 +1,48 @@
+title: "[Self-Audit]: "
+labels: ["self-audit"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### ERBoard Self-Audit & Dogfooding Policy
+        Running `erboard` on itself is encouraged, **but raw unverified LLM dumps are not accepted as bug reports**:
+        1. **Check the pinned `[BASELINE]` Discussion first**—duplicate findings already triaged as `False Positive` will be closed immediately.
+        2. **Only `P0` or `P1` findings** qualify as potential bugs. `P2`/`P3` nitpicks and `--hiring-signals` polish gaps will not be converted to Issues.
+        3. **You must personally verify the code** at the cited lines and explain the failure in your own words.
+  - type: dropdown
+    id: classification
+    attributes:
+      label: How did you classify this finding after inspecting the code?
+      options:
+        - "Genuine P0/P1 Bug in ERBoard (Verified by reading the source)"
+        - "ERBoard False Positive / Hallucination (Prompt calibration opportunity)"
+        - "Benchmark / Model Comparison Share Only (No action needed)"
+    validations:
+      required: true
+  - type: input
+    id: provider_model
+    attributes:
+      label: Provider, Model & ERBoard Version
+      description: Required to track model precision and false-positive rates.
+      placeholder: "erboard 0.1.0 | --gemini | gemini-3.5-flash-lite"
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Exact File Path & Line Range
+      placeholder: "src/erboard/review/runner.py:142-168"
+    validations:
+      required: true
+  - type: textarea
+    id: human_verification
+    attributes:
+      label: Your Human Verification & Reproduction (No Raw AI Copy-Paste)
+      description: Explain in your own words why this is a real bug (or why the agent hallucinated it) and how to trigger it.
+    validations:
+      required: true
+  - type: textarea
+    id: raw_finding
+    attributes:
+      label: Original ERBoard Finding Output (Optional Reference)
+      description: You may paste the finding summary here for reference after writing your own explanation above.

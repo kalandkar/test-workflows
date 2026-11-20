@@ -1,0 +1,24 @@
+title: "[Approval Request]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Contributor Approval Request
+        To protect maintainer time from unverified or AI-slop Pull Requests, first-time contributors must be approved before opening a Pull Request:
+        1. Link the **existing Issue** (or confirmed Discussion) you want to work on.
+        2. Explain your proposed implementation approach **in your own human words** (do not use AI to write this post).
+        3. Once the maintainer comments `!approve`, you will be added to `.github/CONTRIBUTORS.td` and can submit Pull Requests.
+  - type: input
+    id: target_issue
+    attributes:
+      label: Target Issue or Discussion URL
+      placeholder: "https://github.com/kalandkar/erboard/issues/..."
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Proposed Implementation Plan (Human-Written)
+      description: Briefly explain what files/modules you plan to touch and how your change works.
+    validations:
+      required: true

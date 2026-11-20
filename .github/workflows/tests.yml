@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-unit:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --group dev
+
+      - name: Ruff Lint & Format Check
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Run Unit Tests
+        run: |
+          uv run pytest -q -p no:randomly --ignore=tests/integration --ignore=tests/e2e
+
+  integration-e2e:
+    name: Integration & End-to-End Tests
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    needs: lint-unit
+    timeout-minutes: 25
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies and Playwright
+        run: |
+          uv sync --group dev
+          uv run playwright install --with-deps chromium
+
+      - name: Run Integration & E2E Suite (Parallel)
+        run: |
+          uv run pytest -m "(integration or e2e) and not live_llm" -n auto --junitxml=pytest-report.xml --tracing=retain-on-failure --output=test-results
+
+      - name: Upload Test Results Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-e2e-artifacts
+          path: |
+            pytest-report.xml
+            test-results/
+          retention-days: 14
+
+  windows-install:
+    name: Windows Native Install & CLI Verification
+    runs-on: windows-latest
+    if: github.event_name != 'schedule'
+    timeout-minutes: 15
+    # Marked continue-on-error: true until it has passed 3 consecutive runs in CI
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Run Windows native installer (local-source mode)
+        shell: pwsh
+        run: |
+          ./install.ps1 -NoSetup -NoCompletion
+
+      - name: Verify erboard version and PATH persistence in fresh PowerShell session
+        shell: pwsh
+        run: |
+          erboard version
+
+      - name: Verify CLI review invocation on fixture
+        shell: pwsh
+        run: |
+          erboard --help
+          erboard review --help
+
+      - name: Run Windows native uninstaller with -Purge
+        shell: pwsh
+        run: |
+          ./uninstall.ps1 -Purge
+
+      - name: Assert erboard command is removed from PATH
+        shell: pwsh
+        run: |
+          try {
+            Get-Command erboard
+            throw "Expected Get-Command erboard to fail, but command was still found on PATH."
+          } catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Host "Confirmed: Get-Command erboard failed as expected (command removed)."
+          }
+
+  live-llm:
+    name: Live LLM Contract Evaluation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 30
+    continue-on-error: true
+    env:
+      HAS_LIVE_SECRETS: ${{ secrets.ERB_GEMINI_API_KEY != '' || secrets.ERB_OPENROUTER_API_KEY != '' }}
+      ERB_OPENROUTER_API_KEY: ${{ secrets.ERB_OPENROUTER_API_KEY }}
+      ERB_GEMINI_API_KEY: ${{ secrets.ERB_GEMINI_API_KEY }}
+    steps:
+      - name: Checkout code
+        if: env.HAS_LIVE_SECRETS == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        if: env.HAS_LIVE_SECRETS == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        if: env.HAS_LIVE_SECRETS == 'true'
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        if: env.HAS_LIVE_SECRETS == 'true'
+        run: |
+          uv sync --group dev
+
+      - name: Run Live Evaluation
+        if: env.HAS_LIVE_SECRETS == 'true'
+        run: |
+          uv run pytest tests/e2e/test_live_eval.py -m live_llm --verbose

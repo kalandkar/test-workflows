@@ -1,0 +1,65 @@
+title: "[Bug]: "
+labels: ["needs-confirmation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Issue Triage Guidelines
+        - **Read the [AI Usage & Contribution Policy](https://github.com/kalandkar/erboard/blob/main/AI_POLICY.md) first.** Low-effort LLM-generated slop posts will be closed and locked immediately.
+        - **Confirmed bugs become Issues:** Once a maintainer reproduces your problem here, this Discussion will be converted directly into a GitHub Issue.
+  - type: input
+    id: version
+    attributes:
+      label: ERBoard Version
+      description: Paste the output of `erboard version`
+      placeholder: "erboard 0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System & Shell
+      options:
+        - Linux (bash / zsh / fish)
+        - macOS (zsh / bash / fish)
+        - Windows (PowerShell 7+ / PowerShell 5.1)
+        - Windows (WSL2)
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: LLM Provider & Workflow
+      options:
+        - Google Gemini (--gemini)
+        - Google Cloud Vertex AI (--vertex-ai)
+        - OpenRouter (--openrouter)
+        - Ollama Local / Cloud (--ollama)
+        - Static Analysis / HTML Dashboard / Installer (No LLM)
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Exact Command & Steps to Reproduce
+      description: Explain in your own words what you ran and what happened.
+      placeholder: |
+        1. Ran `erboard review . --profile quality`
+        2. Observed error...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Terminal Output / Debug Logs
+      description: Paste relevant terminal output (re-run with `--debug` if related to LLM calls). Never paste API keys.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or Screencast
+      description: Drag and drop or paste a screenshot or screen recording clearly showing the error, terminal output, or dashboard UI issue.
+    validations:
+      required: true
