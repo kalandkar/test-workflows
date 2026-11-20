@@ -13,4 +13,4 @@
 # Maintainers can approve a contributor by commenting "!approve" on a Discussion,
 # or block a user by commenting "!block" on a Discussion.
 
-samphone085-commits
+-samphone085-commits # blocked via discussion #1
